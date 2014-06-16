@@ -20,7 +20,7 @@ def build(ctx):
         target = 'pebbleone')
 
     ctx(
-        rule    = copy_fPpile,
+        rule    = copy_file,
         source  = ['libpebbleone.a'],
         target  = ctx.path.make_node('delivery/libpebbleone.a')
     )
