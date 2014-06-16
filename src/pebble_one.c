@@ -22,6 +22,8 @@
 
 #include <pebble.h>
 #include <time.h>
+#include "config.h"
+ #include "pebble_one_gpath.h"
 
 // keys for app message and storage
 #define SECONDS_MODE   0
@@ -84,7 +86,7 @@ static int graphics_mode  = GRAPHICS_MODE_NORMAL;
 static int connlost_mode  = CONNLOST_MODE_IGNORE;
 static bool has_config = false;
 
-static Window *window;
+// static Window *window;
 static Layer *background_layer;
 static Layer *hands_layer;
 static Layer *date_layer;
@@ -98,7 +100,7 @@ static BitmapLayer *battery_layer;
 static GBitmap *bluetooth_images[4];
 static BitmapLayer *bluetooth_layer;
 
-static InverterLayer *inverter_layer;
+static InverterLayer *inverter_layer__;
 
 static struct tm *now = NULL;
 static int date_wday = -1;
@@ -116,42 +118,7 @@ static TextLayer *debug_layer;
 static char debug_buffer[DEBUG_BUFFER_BYTES];
 #endif
 
-const GPathInfo HOUR_POINTS = {
-  6,
-  (GPoint []) {
-    { 6,-37},
-    { 3,-40},
-    {-3,-40},
-    {-6,-37},
-    {-6,  0},
-    { 6,  0},
-  }
-};
-static GPath *hour_path;
 
-const GPathInfo MIN_POINTS = {
-  6,
-  (GPoint []) {
-    { 5,-57},
-    { 3,-61},
-    {-3,-61},
-    {-5,-57},
-    {-5,  0},
-    { 5,  0},
-  }
-};
-static GPath *min_path;
-
-const GPathInfo SEC_POINTS = {
-  4,
-  (GPoint []) {
-    { 2,  0},
-    { 2,-61},
-    {-2,-61},
-    {-2,  0},
-  }
-};
-static GPath *sec_path;
 
 const char WEEKDAY_NAMES[6][7][5] = { // 3 chars, 1 for utf-8, 1 for terminating 0
   {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"},
@@ -162,7 +129,7 @@ const char WEEKDAY_NAMES[6][7][5] = { // 3 chars, 1 for utf-8, 1 for terminating
   {"Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"},
 };
 
-void background_layer_update_callback(Layer *layer, GContext* ctx) {
+static void background_layer_update_callback(Layer *layer, GContext* ctx) {
 	graphics_context_set_fill_color(ctx, GColorWhite);
   for (int32_t angle = 0; angle < THREESIXTY; angle += THREESIXTY / 12) {
     GPoint pos = GPoint(
@@ -172,7 +139,7 @@ void background_layer_update_callback(Layer *layer, GContext* ctx) {
   }
 }
 
-void hands_layer_update_callback(Layer *layer, GContext* ctx) {
+static void hands_layer_update_callback(Layer *layer, GContext* ctx) {
 #if SCREENSHOT
   now->tm_hour = 10;
   now->tm_min = 9;
@@ -214,7 +181,7 @@ void hands_layer_update_callback(Layer *layer, GContext* ctx) {
   graphics_fill_circle(ctx, center, DOTS_SIZE);
 }
 
-void date_layer_update_callback(Layer *layer, GContext* ctx) {
+static void date_layer_update_callback(Layer *layer, GContext* ctx) {
 
 #if SCREENSHOT
   now->tm_wday = 0;
@@ -249,16 +216,16 @@ void date_layer_update_callback(Layer *layer, GContext* ctx) {
   date_mday = now->tm_mday;
 }
 
-void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
+static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   now = tick_time;
   layer_mark_dirty(hands_layer);
   if (date_mode != DATE_MODE_OFF && (now->tm_wday != date_wday || now->tm_mday != date_mday))
     layer_mark_dirty(date_layer);
 }
 
-void lost_connection_warning(void *);
+static void lost_connection_warning(void *);
 
-void handle_bluetooth(bool connected) {
+static void handle_bluetooth(bool connected) {
   bitmap_layer_set_bitmap(bluetooth_layer, bluetooth_images[connected ? 1 : 0]);
   layer_set_hidden(bitmap_layer_get_layer(bluetooth_layer),
     bluetooth_mode == BLUETOOTH_MODE_NEVER ||
@@ -268,7 +235,7 @@ void handle_bluetooth(bool connected) {
   was_connected = connected;
 }
 
-void lost_connection_warning(void *data) {
+static void lost_connection_warning(void *data) {
   int count = (int) data;
   bool on_off = count & 1;
   // blink icon
@@ -283,7 +250,7 @@ void lost_connection_warning(void *data) {
     handle_bluetooth(bluetooth_connection_service_peek());
 }
 
-void handle_battery(BatteryChargeState charge_state) {
+static void handle_battery(BatteryChargeState charge_state) {
 #if DEBUG
   //strftime(debug_buffer, DEBUG_BUFFER_BYTES, "%d.%m.%Y %H:%M:%S", now);
   snprintf(debug_buffer, DEBUG_BUFFER_BYTES, "%s%d%%",  charge_state.is_charging ? "+" : "", charge_state.charge_percent);
@@ -317,12 +284,12 @@ void handle_battery(BatteryChargeState charge_state) {
   }
 }
 
-void handle_inverter() {
-  if (layer_get_hidden(inverter_layer_get_layer(inverter_layer)) != (graphics_mode == GRAPHICS_MODE_NORMAL))
-    layer_set_hidden(inverter_layer_get_layer(inverter_layer), graphics_mode == GRAPHICS_MODE_NORMAL);
+static void handle_inverter() {
+  if (layer_get_hidden(inverter_layer_get_layer(inverter_layer__)) != (graphics_mode == GRAPHICS_MODE_NORMAL))
+    layer_set_hidden(inverter_layer_get_layer(inverter_layer__), graphics_mode == GRAPHICS_MODE_NORMAL);
 }
 
-void handle_appmessage_receive(DictionaryIterator *received, void *context) {
+static void handle_appmessage_receive(DictionaryIterator *received, void *context) {
   Tuple *tuple = dict_read_first(received);
   while (tuple) {
     switch (tuple->key) {
@@ -356,7 +323,7 @@ void handle_appmessage_receive(DictionaryIterator *received, void *context) {
   layer_mark_dirty(date_layer);
 }
 
-void request_config(void) {
+static void request_config(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Requesting config");
   Tuplet request_tuple = TupletInteger(REQUEST_CONFIG, 1);
   DictionaryIterator *iter;
@@ -367,23 +334,27 @@ void request_config(void) {
   app_message_outbox_send();
 }
 
+void redraw_pebbleone(){
 
-void handle_init() {
+}
+
+
+void load_pebbleone() {
   time_t clock = time(NULL);
   now = localtime(&clock);
-  window = window_create();
-  window_stack_push(window, true /* Animated */);
-  window_set_background_color(window, GColorBlack);
+  // window = window_create();
+  // window_stack_push(window, true /* Animated */);
+  // window_set_background_color(window, GColorBlack);
 
   date_layer = layer_create(GRect(0, 144, 144, 24));
   layer_set_update_proc(date_layer, &date_layer_update_callback);
-  layer_add_child(window_get_root_layer(window), date_layer);
+  layer_add_child(rootLayer, date_layer);
 
   background_layer = layer_create(GRect(0, 0, 144, 144));
   layer_set_update_proc(background_layer, &background_layer_update_callback);
-  layer_add_child(window_get_root_layer(window), background_layer);
+  layer_add_child(rootLayer, background_layer);
 
-  logo = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_LOGO);  
+  logo = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_LOGO + resourceOffset);  
   GRect frame = logo->bounds;
   grect_align(&frame, &GRect(0, 0, 144, 72), GAlignCenter, false);
   logo_layer = bitmap_layer_create(frame);
@@ -395,12 +366,12 @@ void handle_init() {
   layer_add_child(background_layer, hands_layer);
 
   for (int i = 0; i < 22; i++)
-    battery_images[i] = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BATTERY_0 + i);  
+    battery_images[i] = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BATTERY_0 + i + resourceOffset);  
   battery_layer = bitmap_layer_create(GRect(144-16-3, 3, 16, 10));
-  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(battery_layer));
+  layer_add_child(rootLayer, bitmap_layer_get_layer(battery_layer));
 
   for (int i = 0; i < 2; i++)
-    bluetooth_images[i] = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BLUETOOTH_OFF + i);  
+    bluetooth_images[i] = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BLUETOOTH_OFF + i + resourceOffset);  
   bluetooth_layer = bitmap_layer_create(GRect(66, 0, 13, 13));
   layer_add_child(background_layer, bitmap_layer_get_layer(bluetooth_layer));
 
@@ -410,20 +381,21 @@ void handle_init() {
   text_layer_set_text(debug_layer, debug_buffer);
   text_layer_set_text_color(debug_layer, GColorWhite);
   text_layer_set_background_color(debug_layer, GColorBlack);
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(debug_layer));
+  layer_add_child(rootLayer, text_layer_get_layer(debug_layer));
 #endif
   
-  inverter_layer = inverter_layer_create(GRect(0, 0, 144, 168));
-  layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(inverter_layer));
+  inverter_layer__ = inverter_layer_create(GRect(0, 0, 144, 168));
+  layer_add_child(rootLayer, inverter_layer_get_layer(inverter_layer__));
 
-  hour_path = gpath_create(&HOUR_POINTS);
+  init_gpathes();
+  // hour_path = gpath_create(&HOUR_POINTS);
   gpath_move_to(hour_path, GPoint(CENTER_X, CENTER_Y));
-  min_path = gpath_create(&MIN_POINTS);
+  // min_path = gpath_create(&MIN_POINTS);
   gpath_move_to(min_path, GPoint(CENTER_X, CENTER_Y));
-  sec_path = gpath_create(&SEC_POINTS);
+  // sec_path = gpath_create(&SEC_POINTS);
   gpath_move_to(sec_path, GPoint(CENTER_X, CENTER_Y));
 
-  font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_30));
+  font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_30 + resourceOffset));
 
   has_config = true;
   if (persist_exists(SECONDS_MODE)) seconds_mode = persist_read_int(SECONDS_MODE); else has_config = false;
@@ -433,6 +405,14 @@ void handle_init() {
   if (persist_exists(GRAPHICS_MODE)) graphics_mode = persist_read_int(GRAPHICS_MODE); else has_config = false;
   if (persist_exists(CONNLOST_MODE)) connlost_mode = persist_read_int(CONNLOST_MODE); else has_config = false;
   if (has_config) APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded config");
+
+  //fake config
+  seconds_mode = SECONDS_MODE_ALWAYS;
+  battery_mode = BATTERY_MODE_ALWAYS;
+  date_mode = DATE_MODE_FIRST;
+  bluetooth_mode = BLUETOOTH_MODE_ALWAYS;
+
+
   tick_timer_service_subscribe(hide_seconds ? MINUTE_UNIT : SECOND_UNIT, &handle_tick);
   battery_state_service_subscribe(&handle_battery);
   handle_battery(battery_state_service_peek());
@@ -444,7 +424,7 @@ void handle_init() {
   if (!has_config) request_config();
 }
 
-void handle_deinit() {
+void unload_pebbleone() {
   app_message_deregister_callbacks();
   battery_state_service_unsubscribe();
   tick_timer_service_unsubscribe();
@@ -463,7 +443,7 @@ void handle_deinit() {
   gpath_destroy(sec_path);
   gpath_destroy(min_path);
   gpath_destroy(hour_path);
-  inverter_layer_destroy(inverter_layer);
+  inverter_layer_destroy(inverter_layer__);
 #if DEBUG
   text_layer_destroy(debug_layer);
 #endif
@@ -478,11 +458,11 @@ void handle_deinit() {
     gbitmap_destroy(bluetooth_images[i]);
   layer_destroy(background_layer);
   layer_destroy(date_layer);
-  window_destroy(window);
+  // window_destroy(window);
 }
 
-int main(void) {
-  handle_init();
-  app_event_loop();
-  handle_deinit();
-}
+// int main(void) {
+//   handle_init();
+//   app_event_loop();
+//   handle_deinit();
+// }
