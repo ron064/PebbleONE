@@ -19,11 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+// Updates and changes for PposDemo by Ron Ravid & Gregoire Sage
 
 #include <pebble.h>
 #include <time.h>
-#include "config.h"
- #include "pebble_one_gpath.h"
+#include "pposdemo.h"
+#include "pebble_one_gpath.h"
 
 // keys for app message and storage
 #define SECONDS_MODE   0
@@ -121,16 +122,16 @@ static char debug_buffer[DEBUG_BUFFER_BYTES];
 
 
 const char WEEKDAY_NAMES[6][7][5] = { // 3 chars, 1 for utf-8, 1 for terminating 0
-  {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"},
-  {"So",  "Mo",  "Di",  "Mi",  "Do",  "Fr",  "Sa" },
-  {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"},
-  {"Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"},
-  {"Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"},
-  {"Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"},
+  {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, //EN
+  {"So",  "Mo",  "Di",  "Mi",  "Do",  "Fr",  "Sa" }, //DE
+  {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"}, //ES
+  {"Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"}, //FR
+  {"Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"}, //IT
+  {"Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör"}, //SE
 };
 
 static void background_layer_update_callback(Layer *layer, GContext* ctx) {
-	graphics_context_set_fill_color(ctx, GColorWhite);
+	graphics_context_set_fill_color(ctx, foreColor);
   for (int32_t angle = 0; angle < THREESIXTY; angle += THREESIXTY / 12) {
     GPoint pos = GPoint(
       CENTER_X + DOTS_RADIUS * cos_lookup(angle) / ONE,
@@ -153,8 +154,8 @@ static void hands_layer_update_callback(Layer *layer, GContext* ctx) {
   int32_t min_angle = THREESIXTY * now->tm_min / 60;
   gpath_rotate_to(hour_path, hour_angle);
   gpath_rotate_to(min_path, min_angle);
-  graphics_context_set_fill_color(ctx, GColorWhite);
-  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, foreColor);
+  graphics_context_set_stroke_color(ctx, backColor);
   gpath_draw_filled(ctx, hour_path);
   gpath_draw_outline(ctx, hour_path);
   graphics_draw_circle(ctx, center, DOTS_SIZE+4);
@@ -168,16 +169,16 @@ static void hands_layer_update_callback(Layer *layer, GContext* ctx) {
     GPoint sec_pos = GPoint(
       CENTER_X + SEC_RADIUS * sin_lookup(sec_angle) / ONE,
       CENTER_Y - SEC_RADIUS * cos_lookup(sec_angle) / ONE);
-    graphics_context_set_fill_color(ctx, GColorBlack);
+    graphics_context_set_fill_color(ctx, backColor);
     gpath_rotate_to(sec_path, sec_angle);
     gpath_draw_filled(ctx, sec_path);
-    graphics_context_set_stroke_color(ctx, GColorWhite);
+    graphics_context_set_stroke_color(ctx, foreColor);
     graphics_context_set_compositing_mode(ctx, GCompOpAssignInverted);
     graphics_draw_line(ctx, center, sec_pos);
   }
 
   // center dot
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, backColor);
   graphics_fill_circle(ctx, center, DOTS_SIZE);
 }
 
@@ -188,7 +189,7 @@ static void date_layer_update_callback(Layer *layer, GContext* ctx) {
   now->tm_mday = 25;
 #endif
 
-  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_context_set_text_color(ctx, foreColor);
 
   // weekday
   //strftime(date_buffer, DATE_BUFFER_BYTES, "%a", now);
@@ -288,7 +289,7 @@ static void handle_inverter() {
   if (layer_get_hidden(inverter_layer_get_layer(inverter_layer__)) != (graphics_mode == GRAPHICS_MODE_NORMAL))
     layer_set_hidden(inverter_layer_get_layer(inverter_layer__), graphics_mode == GRAPHICS_MODE_NORMAL);
 }
-
+/*
 static void handle_appmessage_receive(DictionaryIterator *received, void *context) {
   Tuple *tuple = dict_read_first(received);
   while (tuple) {
@@ -332,19 +333,20 @@ static void request_config(void) {
   dict_write_tuplet(iter, &request_tuple);
   dict_write_end(iter);
   app_message_outbox_send();
+}*/
+
+void redraw_one(){
+  layer_mark_dirty(hands_layer);
+  layer_mark_dirty(date_layer);
 }
 
-void redraw_pebbleone(){
 
-}
-
-
-void load_pebbleone() {
+void load_one() {
   time_t clock = time(NULL);
   now = localtime(&clock);
   // window = window_create();
   // window_stack_push(window, true /* Animated */);
-  // window_set_background_color(window, GColorBlack);
+  // window_set_background_color(window, backColor);
 
   date_layer = layer_create(GRect(0, 144, 144, 24));
   layer_set_update_proc(date_layer, &date_layer_update_callback);
@@ -379,15 +381,15 @@ void load_pebbleone() {
   debug_layer = text_layer_create(GRect(0, 0, 32, 16));
   strcpy(debug_buffer, "");
   text_layer_set_text(debug_layer, debug_buffer);
-  text_layer_set_text_color(debug_layer, GColorWhite);
-  text_layer_set_background_color(debug_layer, GColorBlack);
+  text_layer_set_text_color(debug_layer, foreColor);
+  text_layer_set_background_color(debug_layer, backColor);
   layer_add_child(rootLayer, text_layer_get_layer(debug_layer));
 #endif
   
   inverter_layer__ = inverter_layer_create(GRect(0, 0, 144, 168));
   layer_add_child(rootLayer, inverter_layer_get_layer(inverter_layer__));
 
-  init_gpathes();
+  init_one_gpathes();
   // hour_path = gpath_create(&HOUR_POINTS);
   gpath_move_to(hour_path, GPoint(CENTER_X, CENTER_Y));
   // min_path = gpath_create(&MIN_POINTS);
@@ -397,7 +399,7 @@ void load_pebbleone() {
 
   font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_30 + resourceOffset));
 
-  has_config = true;
+/*  has_config = true;
   if (persist_exists(SECONDS_MODE)) seconds_mode = persist_read_int(SECONDS_MODE); else has_config = false;
   if (persist_exists(BATTERY_MODE)) battery_mode = persist_read_int(BATTERY_MODE); else has_config = false;
   if (persist_exists(DATE_MODE)) date_mode = persist_read_int(DATE_MODE); else has_config = false;
@@ -405,13 +407,14 @@ void load_pebbleone() {
   if (persist_exists(GRAPHICS_MODE)) graphics_mode = persist_read_int(GRAPHICS_MODE); else has_config = false;
   if (persist_exists(CONNLOST_MODE)) connlost_mode = persist_read_int(CONNLOST_MODE); else has_config = false;
   if (has_config) APP_LOG(APP_LOG_LEVEL_DEBUG, "Loaded config");
-
-  //fake config
-  seconds_mode = SECONDS_MODE_ALWAYS;
-  battery_mode = BATTERY_MODE_ALWAYS;
-  date_mode = DATE_MODE_FIRST;
-  bluetooth_mode = BLUETOOTH_MODE_ALWAYS;
-
+*/
+  //load config
+  seconds_mode = AllSet[setOffset+SECONDS_MODE];
+  battery_mode = AllSet[setOffset+BATTERY_MODE];
+  date_mode = AllSet[setOffset+DATE_MODE];
+  bluetooth_mode = AllSet[setOffset+BLUETOOTH_MODE];
+  graphics_mode = AllSet[setOffset+GRAPHICS_MODE];
+  connlost_mode = AllSet[setOffset+CONNLOST_MODE];
 
   tick_timer_service_subscribe(hide_seconds ? MINUTE_UNIT : SECOND_UNIT, &handle_tick);
   battery_state_service_subscribe(&handle_battery);
@@ -419,16 +422,16 @@ void load_pebbleone() {
   bluetooth_connection_service_subscribe(&handle_bluetooth);
   handle_bluetooth(bluetooth_connection_service_peek());
   handle_inverter();
-  app_message_register_inbox_received(&handle_appmessage_receive);
-  app_message_open(INBOX_SIZE, OUTBOX_SIZE);
-  if (!has_config) request_config();
+  //app_message_register_inbox_received(&handle_appmessage_receive);
+  //app_message_open(INBOX_SIZE, OUTBOX_SIZE);
+  //if (!has_config) request_config();
 }
 
-void unload_pebbleone() {
+void unload_one() {
   app_message_deregister_callbacks();
   battery_state_service_unsubscribe();
   tick_timer_service_unsubscribe();
-  if (has_config) {
+/*  if (has_config) {
     persist_write_int(SECONDS_MODE, seconds_mode);
     persist_write_int(BATTERY_MODE, battery_mode);
     persist_write_int(DATE_MODE, date_mode);
@@ -438,7 +441,7 @@ void unload_pebbleone() {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Wrote config");
   } else {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Did not write config");
-  }
+  }*/
   fonts_unload_custom_font(font);
   gpath_destroy(sec_path);
   gpath_destroy(min_path);
@@ -466,3 +469,19 @@ void unload_pebbleone() {
 //   app_event_loop();
 //   handle_deinit();
 // }
+void info_one(void* disp_info)
+{ // two sets, one shows everything, other demonstrate minimal(+invert)
+	char Defaults[6][3]={{setOffset+SECONDS_MODE,	SECONDS_MODE_ALWAYS,	SECONDS_MODE_IFNOTLOW},
+						 {setOffset+BATTERY_MODE,	BATTERY_MODE_ALWAYS,	BATTERY_MODE_IF_LOW},
+						 {setOffset+DATE_MODE,		DATE_MODE_EN,			DATE_MODE_OFF},
+						 {setOffset+BLUETOOTH_MODE,	BLUETOOTH_MODE_ALWAYS,	BLUETOOTH_MODE_IFOFF},
+						 {setOffset+GRAPHICS_MODE,	GRAPHICS_MODE_NORMAL,	GRAPHICS_MODE_INVERT},
+						 {setOffset+CONNLOST_MODE,	CONNLOST_MODE_IGNORE,	CONNLOST_MODE_IGNORE},
+						};
+	display_info * info = (display_info *) disp_info;
+	snprintf(info->app_name, sizeof(info->app_name),"One");
+	snprintf(info->dev_name, sizeof(info->dev_name),"Bert Freudenberg");	
+	memcpy(info->def_set, &Defaults, 6*3 );
+	info->def_cnt= 6; //six setting items
+	info->def_opt= 5; //first five have alternative value
+}

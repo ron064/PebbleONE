@@ -39,7 +39,7 @@ const GPathInfo SEC_POINTS = {
   }
 };
 
-void init_gpathes(){
+void init_one_gpathes(){
   hour_path = gpath_create(&HOUR_POINTS);
   min_path = gpath_create(&MIN_POINTS);
   sec_path = gpath_create(&SEC_POINTS);

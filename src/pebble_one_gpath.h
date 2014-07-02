@@ -2,7 +2,7 @@
 
 #include <pebble.h>
 
-void init_gpathes();
+void init_one_gpathes();
 
 extern GPath *hour_path;
 extern GPath *min_path;
