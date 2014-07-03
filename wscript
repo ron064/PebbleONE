@@ -16,7 +16,7 @@ def build(ctx):
     ctx.load('pebble_sdk')
 
     ctx.stlib(
-        source = ctx.path.ant_glob('src/*.c'), 
+        source = ctx.path.ant_glob('src/pebble_one*.c'), 
         target = 'pebbleone')
 
     ctx(
@@ -24,6 +24,10 @@ def build(ctx):
         source  = ['libpebbleone.a'],
         target  = ctx.path.make_node('delivery/libpebbleone.a')
     )
+
+
+    ctx.pbl_program(source=ctx.path.ant_glob('src/demo_main.c'),
+                    target='pebble-app.elf')
 
     # ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
     #                 target='pebble-app.elf')

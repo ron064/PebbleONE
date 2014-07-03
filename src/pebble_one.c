@@ -472,12 +472,12 @@ void unload_one() {
 void info_one(void* disp_info)
 { // two sets, one shows everything, other demonstrate minimal(+invert)
 	char Defaults[6][3]={{setOffset+SECONDS_MODE,	SECONDS_MODE_ALWAYS,	SECONDS_MODE_IFNOTLOW},
-						 {setOffset+BATTERY_MODE,	BATTERY_MODE_ALWAYS,	BATTERY_MODE_IF_LOW},
-						 {setOffset+DATE_MODE,		DATE_MODE_EN,			DATE_MODE_OFF},
-						 {setOffset+BLUETOOTH_MODE,	BLUETOOTH_MODE_ALWAYS,	BLUETOOTH_MODE_IFOFF},
-						 {setOffset+GRAPHICS_MODE,	GRAPHICS_MODE_NORMAL,	GRAPHICS_MODE_INVERT},
-						 {setOffset+CONNLOST_MODE,	CONNLOST_MODE_IGNORE,	CONNLOST_MODE_IGNORE},
-						};
+                             {setOffset+BATTERY_MODE,	BATTERY_MODE_ALWAYS,	BATTERY_MODE_IF_LOW},
+                             {setOffset+DATE_MODE,	DATE_MODE_EN,		DATE_MODE_OFF},
+                             {setOffset+BLUETOOTH_MODE,	BLUETOOTH_MODE_ALWAYS,	BLUETOOTH_MODE_IFOFF},
+                             {setOffset+GRAPHICS_MODE,	GRAPHICS_MODE_NORMAL,	GRAPHICS_MODE_INVERT},
+                             {setOffset+CONNLOST_MODE,	CONNLOST_MODE_IGNORE,	CONNLOST_MODE_IGNORE},
+	};
 	display_info * info = (display_info *) disp_info;
 	snprintf(info->app_name, sizeof(info->app_name),"One");
 	snprintf(info->dev_name, sizeof(info->dev_name),"Bert Freudenberg");	
