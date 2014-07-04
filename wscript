@@ -27,7 +27,11 @@ def build(ctx):
 
 
     ctx.pbl_program(source=ctx.path.ant_glob('src/demo_main.c'),
-                    target='pebble-app.elf')
+                    target='pebble-app.elf',
+                    use=['pebbleone'])
+					
+    # building the pbw. JS not needed.
+    ctx.pbl_bundle(elf='pebble-app.elf')
 
     # ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
     #                 target='pebble-app.elf')
